@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.zip
+
+dist/
+.history-backups/
+
+# Local notification state and private configuration
+instance/
+.env
+notification-settings.private.json
+
+.local-notifications.json
+
+.local-notifications.tmp
+
+# Credentials, local state and generated files
+.DS_Store
+.pytest_cache/
+*.log
+*.pem
+*.key
+local.settings.json
+*.private.json
+*.private.zip
+.azure/

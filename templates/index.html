@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세(탁기) Key</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .inactive {
+            background-color: #eeeeee;
+            color: #666666;
+        }
+
+        .info {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            padding: 15px 25px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+
+        .card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        #notificationPanel { margin: 24px 0; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
+        #notificationPanel h2 { margin-top: 0; }
+        #notificationPanel button, #notificationPassword { padding: 10px 14px; font: inherit; }
+        #notificationPanel button { cursor: pointer; }
+        #notificationPanel button:disabled { cursor: default; }
+        #notificationNames { border: 0; padding: 0; margin: 16px 0; }
+        #notificationNames legend { margin-bottom: 12px; }
+        .notification-option { display: flex; align-items: center; gap: 10px; padding: 8px 0; width: fit-content; cursor: pointer; }
+        .notification-option input { width: 18px; height: 18px; accent-color: #145e44; }
+        .notification-option:focus-within { outline: 2px solid #145e44; outline-offset: 2px; }
+        #notificationMessage { min-height: 1.4em; }
+        #notificationPanel [hidden] { display: none !important; }
+        canvas {
+            max-height: 500px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>세(탁기) Key</h1>
+
+<div class="status-bar">
+    <span id="status" class="status inactive">
+        NO DATA
+    </span>
+
+    <span>
+        Last updated:
+        <strong id="lastUpdated">--</strong>
+    </span>
+</div>
+
+
+<details>
+    <summary>기기 연결 상태</summary>
+    <p>
+        Live connection:
+        <strong id="connectionStatus">Connecting…</strong><br>
+        Message receiver:
+        <strong id="consumerStatus">Starting…</strong>
+    </p>
+</details>
+<p id="replayNotice" aria-live="polite"></p>
+
+<div class="info">
+
+    <div class="card">
+        <strong>온도</strong>
+        <div id="temperature">--</div>
+    </div>
+
+    <div class="card">
+        <strong>대기압</strong>
+        <div id="pressure">--</div>
+    </div>
+
+</div>
+
+<section id="notificationPanel" aria-labelledby="notificationTitle">
+    <h2 id="notificationTitle">세탁 알림</h2>
+    <p id="notificationCurrent" aria-live="polite">알림 설정을 불러오는 중…</p>
+    <p id="cycleStatus" style="white-space:pre-line" aria-live="polite">코스 상태 확인 중…</p>
+    <form id="notificationLogin">
+        <label for="notificationPassword">공통 비밀번호 (숫자 4자리)</label>
+        <input id="notificationPassword" type="password" autocomplete="current-password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required>
+        <button type="submit">잠금 해제</button>
+    </form>
+    <form id="notificationPicker" hidden>
+        <fieldset id="notificationNames"></fieldset>
+        <p id="notificationHint">수신자만 저장합니다. 지금 SMS를 보내지 않습니다.</p>
+        <span id="notificationCountdown" role="timer" style="display:inline-block; margin-right:12px" hidden></span>
+        <button id="notificationSave" type="submit">전송</button>
+        <div style="margin-top:16px">
+            <label for="cycleMode">이번 코스</label>
+            <select id="cycleMode"><option value="wash">세탁</option><option value="dry">건조</option><option value="wash_dry">세탁+건조</option></select>
+            <button id="cycleStart" type="button">이번 코스 시작 기록</button>
+            <button id="cycleObservedEnd" type="button">실제 종료 시각 기록</button>
+            <button id="cycleCancel" type="button">코스 수동 종료 (SMS 안 보냄)</button>
+            <button id="cyclePrepare" type="button">다음 코스 준비</button>
+            <button id="cycleDownload" type="button">실험 기록 다운로드</button>
+            <p>수신자를 먼저 저장한 후 기계를 시작할 때 시작 기록을 누르세요. 실제 종료 기록은 관찰용이며 SMS를 강제로 보내지 않습니다.</p>
+        </div>
+        <button id="notificationLogout" type="button">잠그기</button>
+    </form>
+    <p id="notificationMessage" role="status" aria-live="polite"></p>
+    <button id="notificationRefresh" type="button">알림 상태 새로고침</button>
+</section>
+
+<h2>3축 가속도 &amp; 진동 세기 그래프!</h2>
+<p>
+    5초 묶음별 값입니다.
+    X·Y·Z 축 평균은 왼쪽 눈금, 진동 세기는 오른쪽 눈금을 사용합니다.
+</p>
+
+<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
+    <label for="historyRange">표시 범위</label>
+    <select id="historyRange">
+        <option value="5">최근 5분</option>
+        <option value="30" selected>최근 30분</option>
+        <option value="60">최근 1시간</option>
+    </select>
+    <button id="reloadHistory" type="button">저장 기록 다시 불러오기</button>
+</div>
+<p id="historyNotice" aria-live="polite"></p>
+<canvas id="accelerationChart"></canvas>
+
+<script id="laundryTranslations" type="application/json">{}</script>
+<script src="/static/i18n.js"></script>
+<script src="/static/cycle.js"></script>
+<script src="/static/notifications.js"></script>
+<script src="/static/dashboard.js"></script>
+
+</body>
+</html>
