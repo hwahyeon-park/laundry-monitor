@@ -15,6 +15,26 @@
             padding: 0 20px;
         }
 
+        .page-heading {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 0 0 24px;
+        }
+        .page-heading h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2rem); }
+        .title-photo {
+            width: 76px;
+            height: 76px;
+            flex: 0 0 auto;
+            object-fit: cover;
+            object-position: 50% 55%;
+            border-radius: 14px;
+        }
+        @media (max-width: 480px) {
+            .page-heading { gap: 12px; }
+            .title-photo { width: 60px; height: 60px; border-radius: 12px; }
+        }
+
         .status-bar {
             display: flex;
             align-items: center;
@@ -77,7 +97,10 @@
 
 <body>
 
-<h1>세(탁기) Key</h1>
+<header class="page-heading">
+    <h1>세(탁기) Key</h1>
+    <img class="title-photo" src="/static/images/highland-cow.jpg" alt="" width="76" height="76">
+</header>
 
 <div class="status-bar">
     <span id="status" class="status inactive">
