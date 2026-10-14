@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세(탁기) Key</title>
+    <title>Laundry Monitor</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -77,7 +77,7 @@
 
 <body>
 
-<h1>세(탁기) Key</h1>
+<h1>Laundry Monitor</h1>
 
 <div class="status-bar">
     <span id="status" class="status inactive">
@@ -92,7 +92,7 @@
 
 
 <details>
-    <summary>기기 연결 상태</summary>
+    <summary>Device connection</summary>
     <p>
         Live connection:
         <strong id="connectionStatus">Connecting…</strong><br>
@@ -105,66 +105,155 @@
 <div class="info">
 
     <div class="card">
-        <strong>온도</strong>
+        <strong>Temperature</strong>
         <div id="temperature">--</div>
     </div>
 
     <div class="card">
-        <strong>대기압</strong>
+        <strong>Atmospheric pressure</strong>
         <div id="pressure">--</div>
     </div>
 
 </div>
 
 <section id="notificationPanel" aria-labelledby="notificationTitle">
-    <h2 id="notificationTitle">세탁 알림</h2>
-    <p id="notificationCurrent" aria-live="polite">알림 설정을 불러오는 중…</p>
-    <p id="cycleStatus" style="white-space:pre-line" aria-live="polite">코스 상태 확인 중…</p>
+    <h2 id="notificationTitle">Cycle notifications</h2>
+    <p id="notificationCurrent" aria-live="polite">Loading notification settings…</p>
+    <p id="cycleStatus" style="white-space:pre-line" aria-live="polite">Loading cycle status…</p>
     <form id="notificationLogin">
-        <label for="notificationPassword">공통 비밀번호 (숫자 4자리)</label>
+        <label for="notificationPassword">Shared access code (4 digits)</label>
         <input id="notificationPassword" type="password" autocomplete="current-password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required>
-        <button type="submit">잠금 해제</button>
+        <button type="submit">Unlock</button>
     </form>
     <form id="notificationPicker" hidden>
         <fieldset id="notificationNames"></fieldset>
-        <p id="notificationHint">수신자만 저장합니다. 지금 SMS를 보내지 않습니다.</p>
+        <p id="notificationHint">This saves your recipients. It does not send an SMS now.</p>
         <span id="notificationCountdown" role="timer" style="display:inline-block; margin-right:12px" hidden></span>
-        <button id="notificationSave" type="submit">전송</button>
+        <button id="notificationSave" type="submit">Save recipients</button>
         <div style="margin-top:16px">
-            <label for="cycleMode">이번 코스</label>
-            <select id="cycleMode"><option value="wash">세탁</option><option value="dry">건조</option><option value="wash_dry">세탁+건조</option></select>
-            <button id="cycleStart" type="button">이번 코스 시작 기록</button>
-            <button id="cycleObservedEnd" type="button">실제 종료 시각 기록</button>
-            <button id="cycleCancel" type="button">코스 수동 종료 (SMS 안 보냄)</button>
-            <button id="cyclePrepare" type="button">다음 코스 준비</button>
-            <button id="cycleDownload" type="button">실험 기록 다운로드</button>
-            <p>수신자를 먼저 저장한 후 기계를 시작할 때 시작 기록을 누르세요. 실제 종료 기록은 관찰용이며 SMS를 강제로 보내지 않습니다.</p>
+            <label for="cycleMode">Cycle type</label>
+            <select id="cycleMode"><option value="wash">Wash</option><option value="dry">Dry</option><option value="wash_dry">Wash and dry</option></select>
+            <button id="cycleStart" type="button">Record cycle start</button>
+            <button id="cycleObservedEnd" type="button">Record observed completion</button>
+            <button id="cycleCancel" type="button">Cancel cycle without SMS</button>
+            <button id="cyclePrepare" type="button">Prepare next cycle</button>
+            <button id="cycleDownload" type="button">Download cycle records</button>
+            <p>Save recipients first, then record the cycle start when you start the machine. Recording an observed completion time does not trigger an SMS.</p>
         </div>
-        <button id="notificationLogout" type="button">잠그기</button>
+        <button id="notificationLogout" type="button">Lock</button>
     </form>
     <p id="notificationMessage" role="status" aria-live="polite"></p>
-    <button id="notificationRefresh" type="button">알림 상태 새로고침</button>
+    <button id="notificationRefresh" type="button">Refresh notification status</button>
 </section>
 
-<h2>3축 가속도 &amp; 진동 세기 그래프!</h2>
+<h2>Acceleration and vibration history</h2>
 <p>
-    5초 묶음별 값입니다.
-    X·Y·Z 축 평균은 왼쪽 눈금, 진동 세기는 오른쪽 눈금을 사용합니다.
+    Each point summarises a five-second batch.
+    Mean X, Y and Z acceleration use the left axis. Vibration RMS uses the right axis.
 </p>
 
 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
-    <label for="historyRange">표시 범위</label>
+    <label for="historyRange">Time range</label>
     <select id="historyRange">
-        <option value="5">최근 5분</option>
-        <option value="30" selected>최근 30분</option>
-        <option value="60">최근 1시간</option>
+        <option value="5">Last 5 minutes</option>
+        <option value="30" selected>Last 30 minutes</option>
+        <option value="60">Last hour</option>
     </select>
-    <button id="reloadHistory" type="button">저장 기록 다시 불러오기</button>
+    <button id="reloadHistory" type="button">Reload recorded data</button>
 </div>
 <p id="historyNotice" aria-live="polite"></p>
 <canvas id="accelerationChart"></canvas>
 
-<script id="laundryTranslations" type="application/json">{}</script>
+<script id="laundryTranslations" type="application/json">{
+  "\ucf54\uc2a4 \uc2dc\uc791\uc744 \uae30\ub85d\ud574 \uc8fc\uc138\uc694": "Record a cycle start to begin monitoring",
+  "\ub3d9\uc791 \ud655\uc778 \uc911": "Waiting for activity",
+  "\uc791\ub3d9 \uc911": "Running",
+  "\uc870\uc6a9\ud55c \uad6c\uac04 \ud655\uc778 \uc911": "Checking for inactivity",
+  "\uc218\ub3d9 \uc885\ub8cc": "Cancelled",
+  "\uc644\ub8cc\ub85c \ud310\uc815": "Completion detected",
+  "\uc218\ub3d9 \uc885\ub8cc \u00b7 \ubc1c\uc1a1 \uc548 \ud568": "Cancelled \u00b7 no SMS sent",
+  "\ubcf5\uad6c \uc9c0\uc5f0 \u00b7 \ubc1c\uc1a1 \uc548 \ud568": "Recovery delayed \u00b7 no SMS sent",
+  "\ub300\uae30": "Pending",
+  "\ubc1c\uc1a1 \uaebc\uc9d0": "SMS disabled",
+  "\uc124\uc815 \ud544\uc694": "Configuration required",
+  "\ubc1c\uc1a1 \uc694\uccad \uc911/\ud655\uc778 \ud544\uc694": "Submission in progress or unconfirmed",
+  "\uc11c\ube44\uc2a4 \uc811\uc218 \uc644\ub8cc": "Accepted by SMS provider",
+  "\uc77c\ubd80 \uc694\uccad \ud655\uc778 \ud544\uc694": "Some submissions need review",
+  "\uacb0\uacfc \ud655\uc778 \ud544\uc694": "Outcome unconfirmed",
+  "\ubc1c\uc1a1 \uc0dd\ub7b5": "Not sent",
+  " \u00b7 \ucd5c\uc2e0 \uc13c\uc11c \ub370\uc774\ud130 \uc5c6\uc74c": " \u00b7 no recent sensor data",
+  " \u00b7 \uc2e4\uc81c \ubc1c\uc1a1 \uc124\uc815 \ud544\uc694": " \u00b7 SMS configuration required",
+  "\ucf54\uc2a4 \uc0c1\ud0dc\ub97c \ud655\uc778\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.": "Unable to retrieve cycle status.",
+  "\ucf54\uc2a4\ub97c \uc218\ub3d9 \uc885\ub8cc\ud588\uc2b5\ub2c8\ub2e4. SMS\ub294 \ubc1c\uc1a1\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "The cycle was cancelled. No SMS was sent.",
+  "\ubc1c\uc1a1 \ucc98\ub9ac \ubcf5\uad6c\uac00 \ub2a6\uc5b4 \ubb38\uc790\ub97c \ubcf4\ub0b4\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "Recovery was delayed. No SMS was sent.",
+  "\ucf54\uc2a4\ub294 \uc644\ub8cc\ub410\uc9c0\ub9cc SMS \ubc1c\uc1a1\uc740 \uaebc\uc838 \uc788\uc2b5\ub2c8\ub2e4.": "The cycle is complete, but SMS notifications are disabled.",
+  "SMS \uc11c\ubc84 \uc124\uc815\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.": "SMS configuration is required.",
+  "\uc218\uc2e0\uc790\ub9cc \uc800\uc7a5\ud569\ub2c8\ub2e4. \uc9c0\uae08 SMS\ub97c \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.": "This saves your recipients. It does not send an SMS now.",
+  "SMS \uc694\uccad \ucc98\ub9ac \uc5ec\ubd80\ub97c \ud655\uc778 \uc911\uc785\ub2c8\ub2e4.": "SMS submission is in progress or awaiting confirmation.",
+  "SMS \uc11c\ube44\uc2a4\uac00 \uc694\uccad\uc744 \uc811\uc218\ud588\uc2b5\ub2c8\ub2e4. \uc218\uc2e0 \uc644\ub8cc\ub97c \ub73b\ud558\uc9c0\ub294 \uc54a\uc2b5\ub2c8\ub2e4.": "The SMS provider accepted the request. Delivery is not yet confirmed.",
+  "\uc77c\ubd80 SMS\uc758 \ucc98\ub9ac \uacb0\uacfc \ud655\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4. \uc790\ub3d9\uc73c\ub85c \uc7ac\ubc1c\uc1a1\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.": "Some SMS outcomes need review. Messages are not automatically resent.",
+  "SMS \ucc98\ub9ac \uacb0\uacfc \ud655\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4. \uc790\ub3d9\uc73c\ub85c \uc7ac\ubc1c\uc1a1\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.": "The SMS outcome needs review. The message is not automatically resent.",
+  "\uc774 cycle\uc740 \uc218\uc2e0\uc790 \uc5c6\uc774 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4.": "This cycle completed with no recipients selected.",
+  "\ube44\ubc00\ubc88\ud638\ub97c \uc785\ub825\ud574 \uc54c\ub9bc \uc218\uc2e0\uc790\ub97c \ud655\uc778\ud558\uc138\uc694.": "Enter the access code to manage notification recipients.",
+  "\uc7a0\uae08 \ud574\uc81c \uc2dc\uac04\uc774 \ub05d\ub0ac\uc2b5\ub2c8\ub2e4. \uc800\uc7a5\ud55c \uc218\uc2e0\uc790\ub294 \uc720\uc9c0\ub429\ub2c8\ub2e4. \ub2e4\uc2dc \ube44\ubc00\ubc88\ud638\ub97c \uc785\ub825\ud558\uc138\uc694.": "Your session has expired. Saved recipients are unchanged. Enter the access code again.",
+  "\uc790\ub3d9 \uc7a0\uae08\uae4c\uc9c0 {0}\ucd08": "Locks in {0}s",
+  "\uc54c\ub9bc \uc124\uc815\uc744 \ucc98\ub9ac\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.": "Unable to update notification settings.",
+  "\uc751\ub2f5\uc774 \uc9c0\uc5f0\ub429\ub2c8\ub2e4. \uc0c1\ud0dc \uc0c8\ub85c\uace0\uce68\uc73c\ub85c \uc800\uc7a5 \uc5ec\ubd80\ub97c \ud655\uc778\ud558\uc138\uc694.": "The response is taking longer than expected. Refresh the status to check whether your changes were saved.",
+  "\uc0c1\ud0dc\ub97c \ud655\uc778\ud558\uc138\uc694.": "Please check the current status.",
+  "\uc774\ubc88 \uc138\ud0c1\u00b7\uac74\uc870 \uc54c\ub9bc\uc744 \ubc1b\uc744 \uc0ac\ub78c (\ud55c \uba85 \uc774\uc0c1 \uc120\ud0dd)": "Recipients for this cycle (select at least one)",
+  "\uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.": "Check your connection and try again.",
+  "\ud55c \uba85 \uc774\uc0c1 \uc120\ud0dd\ud558\uc138\uc694.": "Select at least one recipient.",
+  "\uc218\uc2e0\uc790\ub97c \uc800\uc7a5\ud588\uc2b5\ub2c8\ub2e4. SMS\ub294 \ubc1c\uc1a1\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "Recipients saved. No SMS was sent.",
+  "\uc2dc\uc791 \uc2dc\uac01\uc744 \uae30\ub85d\ud588\uc2b5\ub2c8\ub2e4. \uc11c\ubc84\uac00 \uc13c\uc11c \ub370\uc774\ud130\ub97c \uacc4\uc18d \uacc4\uc0b0\ud569\ub2c8\ub2e4.": "Start time recorded. Monitoring continues on the server.",
+  "\uc2e4\uc81c \uc885\ub8cc\ub97c \ud655\uc778\ud55c \uc2dc\uac01\uc744 \uae30\ub85d\ud588\uc2b5\ub2c8\ub2e4.": "Observed completion time recorded.",
+  "\ucf54\uc2a4\ub97c \uc218\ub3d9 \uc885\ub8cc\ud588\uc2b5\ub2c8\ub2e4. \uc774 \ucf54\uc2a4\uc758 SMS\ub294 \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.": "Cycle cancelled. No completion SMS will be sent for this cycle.",
+  "\uc5f0\uacb0 \ubcf5\uad6c \uc911 \u2014 \uc218\uc2e0 \uc0c1\ud0dc \ud655\uc778 \ubd88\uac00": "Reconnecting \u2014 reception status unavailable",
+  "\uc218\uc2e0 \uc0c1\ud0dc \ud655\uc778 \uc911": "Checking reception status",
+  "\ub370\uc774\ud130 \uc548\ub4e4\uc5b4\uc640\uc720": "No recent data",
+  "X \ucd95 \ud3c9\uade0": "Mean X acceleration",
+  "Y \ucd95 \ud3c9\uade0": "Mean Y acceleration",
+  "Z \ucd95 \ud3c9\uade0": "Mean Z acceleration",
+  "\uc9c4\ub3d9 \uc138\uae30 [Vibration RMS]": "Vibration RMS",
+  "\uc218\uc2e0 \uc2dc\uac01": "Received at",
+  "\ud3c9\uade0 \uac00\uc18d\ub3c4 (g)": "Mean acceleration (g)",
+  "\uc9c4\ub3d9 \uc138\uae30 (g)": "Vibration RMS (g)",
+  "\uc800\uc7a5 \uae30\ub85d\uc744 \ubd88\ub7ec\uc624\ub294 \uc911\u2026": "Loading recorded data\u2026",
+  "\uc870\ud68c\ub7c9\uc774 \ub9ce\uc2b5\ub2c8\ub2e4. \ub354 \uc9e7\uc740 \ud45c\uc2dc \ubc94\uc704\ub97c \uc120\ud0dd\ud574 \uc8fc\uc138\uc694.": "Too many records. Select a shorter time range.",
+  "\uc800\uc7a5 \uae30\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \uc2e4\uc2dc\uac04 \uc218\uc2e0\uc740 \uacc4\uc18d\ub429\ub2c8\ub2e4. \ub2e4\uc2dc \ubd88\ub7ec\uc624\uae30\ub97c \ub20c\ub7ec \uc8fc\uc138\uc694.": "Unable to load recorded data. Live reception continues. Select Reload recorded data to retry.",
+  "\ucd5c\uadfc {0}\ubd84 \uc800\uc7a5 \uae30\ub85d\uc744 \ubd88\ub7ec\uc654\uc2b5\ub2c8\ub2e4.": "Loaded records from the last {0} minutes.",
+  "\uc774 \uae30\uac04\uc5d0 \uc800\uc7a5\ub41c \uae30\ub85d\uc774 \uc544\uc9c1 \uc5c6\uc2b5\ub2c8\ub2e4. \ub3c4\ucc29\ud558\ub294 \ub370\uc774\ud130\ub294 \uc2e4\uc2dc\uac04\uc73c\ub85c \ud45c\uc2dc\ud569\ub2c8\ub2e4.": "No records are available for this period. Incoming data will appear live.",
+  " \uc77d\uc744 \uc218 \uc5c6\ub294 \uae30\ub85d {0}\uac1c\ub294 \uc81c\uc678\ud588\uc2b5\ub2c8\ub2e4.": " Skipped {0} unreadable records.",
+  "\uc800\uc7a5 \uae30\ub85d \uc870\ud68c\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4. \uc2e4\uc2dc\uac04 \uc218\uc2e0\uc740 \uacc4\uc18d\ub429\ub2c8\ub2e4. \ub2e4\uc2dc \ubd88\ub7ec\uc624\uae30\ub97c \ub20c\ub7ec \uc8fc\uc138\uc694.": "The history request failed. Live reception continues. Select Reload recorded data to retry.",
+  "\uc774 \ub370\uc774\ud130 \ubb36\uc74c\uc744 \ud45c\uc2dc\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.": "Unable to display this data batch.",
+  "\uc218\uc2e0 \uc0c1\ud0dc\ub97c \ud655\uc778\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.": "Unable to read reception status.",
+  "\uc5f0\uacb0\uc744 \ubcf5\uad6c\ud588\uc2b5\ub2c8\ub2e4. \ub204\ub77d \uad6c\uac04\uc758 \uc800\uc7a5 \uae30\ub85d\uc744 \ub2e4\uc2dc \ud655\uc778\ud569\ub2c8\ub2e4.": "Connection restored. Checking recorded data for the missing interval.",
+  "\ud604\uc7ac \ucf54\uc2a4\ub97c \ub2e4\uc2dc \ubd88\ub7ec\uc624\uc138\uc694.": "Refresh the current cycle and try again.",
+  "\uc774\ubbf8 \uc2dc\uc791\ud588\uac70\ub098 \ubcc0\uacbd\ub41c \ucf54\uc2a4\uc785\ub2c8\ub2e4.": "This cycle has already started or changed.",
+  "\ud604\uc7ac \ucf54\uc2a4\uac00 \uc544\uc9c1 \ub05d\ub098\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "The current cycle has not finished.",
+  "\ud604\uc7ac \ucf54\uc2a4\uac00 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4.": "The current cycle has changed.",
+  "\uc774\ubbf8 \uc644\ub8cc\ub410\uac70\ub098 \ubc1c\uc1a1 \ucc98\ub9ac \uc911\uc778 \ucf54\uc2a4\uc785\ub2c8\ub2e4.": "This cycle is complete or its notification is being submitted.",
+  "\uc2dc\uc791\ud55c \ucf54\uc2a4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.": "No cycle has been started.",
+  "\ucc98\ub9ac\uac00 \uc9c0\uc5f0\ub418\uace0 \uc788\uc2b5\ub2c8\ub2e4. \ucd5c\uc2e0 \ub370\uc774\ud130\ub97c \uae30\ub2e4\ub9bd\ub2c8\ub2e4.": "Processing is delayed. Waiting for recent data.",
+  "\uc644\ub8cc \ud310\uc815 \ucc98\ub9ac\ub97c \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uace0 \uc788\uc2b5\ub2c8\ub2e4.": "Retrying completion detection.",
+  "\uc54c\ub9bc \uc11c\ubc84 \uc124\uc815\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.": "Notification service configuration is required.",
+  "\ucf54\uc2a4 \uae30\ub85d \uc800\uc7a5\uc18c\uc5d0 \uc5f0\uacb0\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.": "Unable to connect to cycle storage.",
+  "\uc124\uc815\uc774 \ub3d9\uc2dc\uc5d0 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \ubd88\ub7ec\uc628 \ud6c4 \uc2dc\ub3c4\ud558\uc138\uc694.": "Settings changed in another session. Refresh and try again.",
+  "\uc218\uc2e0\uc790\ub97c \ud55c \uba85 \uc774\uc0c1 \uc120\ud0dd\ud558\uc138\uc694.": "Select at least one recipient.",
+  "\ud604\uc7ac cycle\uc774 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \ubd88\ub7ec\uc624\uc138\uc694.": "The current cycle has changed. Refresh and try again.",
+  "\uc218\uc2e0\uc790 \ub610\ub294 cycle \uc0c1\ud0dc\uac00 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \ubd88\ub7ec\uc624\uc138\uc694.": "Recipients or cycle status have changed. Refresh and try again.",
+  "\uc774\uc804 cycle\uc774 \uc544\uc9c1 \uc644\ub8cc\ub418\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "The previous cycle has not finished.",
+  "\ub4f1\ub85d\ub418\uc9c0 \uc54a\uc740 \uc218\uc2e0\uc790": "Unregistered recipient",
+  "\uc54c\ub9bc \uc124\uc815\uc774 \uc544\uc9c1 \uc900\ube44\ub418\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.": "Notification settings are not available yet.",
+  "\uc778\uc99d \uc0c1\ud0dc\ub97c \ub2e4\uc2dc \ubd88\ub7ec\uc624\uc138\uc694.": "Refresh your session and try again.",
+  "JSON \uc694\uccad\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.": "A JSON request is required.",
+  "\ube44\ubc00\ubc88\ud638\ub97c \ub2e4\uc2dc \uc785\ub825\ud558\uc138\uc694.": "Enter the access code again.",
+  "\uc694\uccad \uac12\uc744 \ud655\uc778\ud558\uc138\uc694.": "Check the submitted values.",
+  "\uc694\uccad\uc744 \ucc98\ub9ac\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.": "Unable to process this request.",
+  "\uc54c\ub9bc \uc124\uc815 \uc800\uc7a5\uc18c\uc5d0 \uc5f0\uacb0\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.": "Unable to connect to notification storage. Try again.",
+  "\uc2dc\ub3c4\uac00 \ub108\ubb34 \ub9ce\uc2b5\ub2c8\ub2e4. 1\ubd84 \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.": "Too many attempts. Try again in one minute.",
+  "\ube44\ubc00\ubc88\ud638\uac00 \ub9de\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.": "Incorrect access code.",
+  "{0}{1}\n\uc2dc\uc791 \uae30\ub85d {2} \u00b7 \uc790\ub3d9 \uc644\ub8cc {3} \u00b7 \uc2e4\uc81c \uc885\ub8cc \uae30\ub85d {4}\nSMS: {5}{6}{7}": "{0}{1}\nStarted {2} \u00b7 Detected completion {3} \u00b7 Observed completion {4}\nSMS: {5}{6}{7}"
+}</script>
 <script src="/static/i18n.js"></script>
 <script src="/static/cycle.js"></script>
 <script src="/static/notifications.js"></script>
