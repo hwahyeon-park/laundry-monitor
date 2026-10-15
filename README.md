@@ -2,26 +2,36 @@
 
 A sensor dashboard for a shared washing machine: ESP32 acceleration and environmental telemetry, Azure storage, live charts, and rule-based cycle completion notifications.
 
-## Korean and English pages
+## One deployment, two languages
 
-- `kor`: the original Korean interface.
-- `eng`: a professional English interface for project demonstrations.
-- Only `templates/index.html` differs between the two branches. The English page includes the text catalogue used by the shared JavaScript files; backend state and SMS behaviour stay the same.
-- English is an interface translation. It does not create a second Azure app or translate recipients’ names, stored records, or SMS messages.
+Both pages ship in `dist/laundry-web.zip`: `templates/index.html` (Korean) and `templates/index_eng.html` (English). The `kor` and `eng` branches are retained and synchronised; neither branch is needed to select a deployment language.
 
-Switch language and create a deployment package:
+From the project directory, deploy once with your preferred default:
 
 ```sh
-git switch kor
-python scripts/package_web.py --output dist/laundry-web-kor.zip
-
-git switch eng
-python scripts/package_web.py --output dist/laundry-web-eng.zip
+python3 scripts/deploy_web.py --language kor
+python3 scripts/deploy_web.py --language eng
 ```
 
-Deploy the selected ZIP to the existing App Service using your usual deployment process. Do not deploy a Git source archive: the packaging script includes only runtime files. Changing branches or building a ZIP does not change the live website. App Service environment variables, including `CYCLE_DETECTOR_BACKEND=function`, remain in Azure.
+These are alternatives: run one. The script builds the same bilingual ZIP, deploys it to `laundry-monitor` in resource group `laundry`, then sets only `UI_LANGUAGE`. Azure CLI must be installed and signed in to the correct account (`az login`). Use `--app` and `--resource-group` to target another app. Existing credentials and detector settings are preserved. No SMS is sent by the deployment script.
 
-For shared code changes, make the change on `kor`, commit it separately from language edits, and cherry-pick that commit onto `eng`. Keep the page catalogue in `eng` updated when adding new user-facing text. Check the branches with `git diff kor eng --name-only`: only the page should differ after synchronising shared changes.
+After the bilingual version has been deployed, switch only the default language:
+
+```sh
+python3 scripts/deploy_web.py --language eng --settings-only
+```
+
+This changes an App Service environment variable and may restart the web app. The separate Function continues cycle detection. To switch back, use `--language kor --settings-only`.
+
+You can also open either language without changing deployment settings:
+
+- Korean: `https://laundry-monitor.azurewebsites.net/?lang=kor`
+- English: `https://laundry-monitor.azurewebsites.net/?lang=eng`
+- The bare URL uses `UI_LANGUAGE`, defaulting to `kor` when unset.
+
+The query parameter changes only the displayed page. Recipients, measurements, records and notification behaviour remain shared. SMS content is unchanged. Language selection does not require modifying or uploading local `.env` files.
+
+Build without deploying: `python3 scripts/package_web.py`. Use `python3 scripts/deploy_web.py --language eng --dry-run` to inspect deployment commands without changing Azure. Keep shared changes synchronised across the two branches; the current source and deployment files are identical on both.
 
 ## Local configuration and secrets
 
@@ -44,6 +54,7 @@ The optional `run_local.sh` is the original operator-specific Azure launcher. It
 node tests/dashboard.test.cjs
 node tests/notifications.test.cjs
 node tests/language.test.cjs
+node tests/language.test.cjs templates/index_eng.html
 ```
 
 The English and Korean interface use the same readings, cycle detection and notification requests. The UI distinguishes SMS provider acceptance from delivery confirmation.
@@ -84,7 +95,7 @@ bash scripts/grant_history_read.sh
 bash run_local.sh
 ```
 
-run_local.sh는 Azure CLI로 laundry-hub-paid의 web-live 연결 문자열을 읽어 프로세스 환경변수에 넣고 app.py를 실행합니다. 별도 서버나 저장 프로세스를 만들지 않습니다. 연결 문자열을 파일에 저장하거나 출력하지 않습니다. 필요한 환경변수가 이미 설정되어 있다면 기존처럼 `.venv/bin/python app.py`로 실행해도 됩니다. `.env.example`은 참고용이며 자동으로 읽지 않습니다.
+run_local.sh는 Azure CLI로 laundry-hub-paid의 web-live 연결 문자열을 읽어 프로세스 환경변수에 넣고 app.py를 실행합니다. 별도 서버나 저장 프로세스를 만들지 않습니다. 연결 문자열을 파일에 저장하거나 출력하지 않습니다. 필요한 환경변수가 이미 설정되어 있다면 기존처럼 `.venv/bin/python app.py`로 실행해도 됩니다. `.env.example`은 예시이며, 실제 로컬 값은 Git에서 제외된 `.env`에 넣으면 자동으로 읽습니다.
 
 주소: http://localhost:5001
 

@@ -32,14 +32,14 @@ window.LaundryNotifications = (() => {
             login.hidden = false;
             names.replaceChildren();
             cycle = null;
-            el('notificationCurrent').textContent = t('비밀번호를 입력해 알림 수신자를 확인하세요.');
+            el('notificationCurrent').textContent = t('비밀번호 입력 후 알림 문자 메시지 받을 사람을 정하세요.');
         }
         function updateCountdown() {
             if (!expiresAt) return;
             const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
             if (!seconds) {
                 lock();
-                message.textContent = t('잠금 해제 시간이 끝났습니다. 저장한 수신자는 유지됩니다. 다시 비밀번호를 입력하세요.');
+                message.textContent = t('잠금 해제 시간이 끝났습니다. 수신자를 다시 선택하려면  비밀번호를 다시 입력하세요.');
                 return;
             }
             countdown.hidden = false;

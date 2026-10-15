@@ -3,7 +3,7 @@ import json
 import os
 from functools import lru_cache
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request, abort
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from fastavro import reader
@@ -39,7 +39,11 @@ def get_archive_container():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    language = request.args.get('lang') or os.getenv('UI_LANGUAGE', 'kor')
+    templates = {'kor': 'index.html', 'eng': 'index_eng.html'}
+    if language not in templates:
+        abort(400, description='Supported languages: kor, eng')
+    return render_template(templates[language]), {'Cache-Control': 'no-store'}
 
 
 @app.route("/api/history/latest")
