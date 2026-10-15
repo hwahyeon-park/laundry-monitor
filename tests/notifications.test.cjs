@@ -82,7 +82,7 @@ const publicData={authenticated:true,expires_in:60,csrf_token:'signed-csrf',cycl
     assert.equal(exp.node('notificationLogin').hidden,false);
     assert.equal(exp.node('notificationNames').children.length,0);
     assert.equal(exp.node('notificationCountdown').hidden,true);
-    assert.match(exp.node('notificationMessage').textContent,/저장한 수신자는 유지/);
+    assert.match(exp.node('notificationMessage').textContent,/수신자를 다시 선택/);
     assert.equal(exp.requests.length,1);
     const c=harness(true);
     const selectedCycle={...cycle,recipient_ids:['wally'],recipient_names:['Wally'],revision:1,detection_phase:'NOT_STARTED'};
