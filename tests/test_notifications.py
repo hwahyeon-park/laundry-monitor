@@ -39,6 +39,8 @@ class NotificationsTests(unittest.TestCase):
         app.testing = True
         service = install_notifications(app, ENV if env is None else env,
                                         store or FileStore(self.path), self.post, lambda: self.now)
+        from cycle_detector import install_detector
+        install_detector(app, service, SimpleNamespace())
         return app, service
 
     def bootstrap(self, client=None):
@@ -127,6 +129,7 @@ class NotificationsTests(unittest.TestCase):
         services = [self.make_app()[1] for _ in range(6)]
         with ThreadPoolExecutor(max_workers=6) as pool:
             results = list(pool.map(lambda svc: svc.on_state_transition(cycle['cycle_id'], 'RUNNING', 'FINISHED'), services))
+        self.assertEqual(len({c.kwargs['json']['content'] for c in self.post.call_args_list}), 1)
         self.assertEqual(results.count('partial'), 1)
         self.assertEqual(self.post.call_count, 3)
         self.assertEqual([call.kwargs['json']['recipient'] for call in self.post.call_args_list],

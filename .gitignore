@@ -1,30 +1,62 @@
-.venv/
-__pycache__/
-*.pyc
+# Local secrets and credentials
 .env
 .env.*
 !.env.example
-*.zip
-
-dist/
-.history-backups/
-
-# Local notification state and private configuration
-instance/
-.env
-notification-settings.private.json
-
-.local-notifications.json
-
-.local-notifications.tmp
-
-# Credentials, local state and generated files
-.DS_Store
-.pytest_cache/
-*.log
-*.pem
-*.key
+!.env.*.example
 local.settings.json
 *.private.json
 *.private.zip
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+*.jks
+*.keystore
 .azure/
+
+# Python environments, caches and generated packages
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+*.zip
+
+# Debug output and explicitly local experiments (keep tests/ tracked)
+*.log
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+/scratch/
+/experiments/local/
+/tests/local/
+
+# Local editor / operating-system metadata
+.DS_Store
+.AppleDouble
+Thumbs.db
+Desktop.ini
+
+# Private runtime state and backups
+instance/
+.history-backups/
+.local-notifications.json
+.local-notifications.tmp
+notification-settings.private.json
+
+# Local draft and one-off IoT endpoint debugging tool
+/README copy.md
+/scripts/probe_endpoint.py

@@ -15,7 +15,7 @@ class PageLanguageTests(unittest.TestCase):
             english = client.get('/?lang=eng')
             self.assertEqual(english.status_code, 200)
             self.assertIn('<html lang="en">', english.text)
-            self.assertIn('Shared access code', english.text)
+            self.assertIn('4-digit access code', english.text)
             for response in [korean, english]:
                 self.assertIn('/static/images/highland-cow.jpg', response.text)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')

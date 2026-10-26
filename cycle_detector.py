@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from flask import jsonify
-from notifications import Conflict
+from notifications import Conflict, sms_configured
 
 log = logging.getLogger(__name__)
 RULES = dict(version='2026-10-07-v1', quiet_rms=0.008, active_rms=0.012,
@@ -54,6 +54,16 @@ class CycleDetector:
         self.stopping = threading.Event()
         self.last_error = None
 
+    def select_recipients(self, cycle_id, recipient_ids, revision):
+        """Save recipients and arm a new run in one durable transaction."""
+        if self.service.env.get('SMS_ENABLED', 'false').lower() == 'true':
+            if not sms_configured(self.service.env):
+                raise ValueError('SMS configuration missing')
+        detection = dict(phase='ARMED', started_at=stamp(self.clock()), mode='unspecified',
+                         rules=dict(RULES), processor=self.processor, points=[],
+                         activity_confirmed=False, last_at=None, gaps=0, observed_end_at=None)
+        return self.service.select(cycle_id, recipient_ids, revision, detection=detection)
+
     def arm(self, cycle_id, revision, mode):
         if mode not in ('wash', 'dry', 'wash_dry'):
             raise ValueError('invalid mode')
@@ -67,13 +77,14 @@ class CycleDetector:
             if not c.get('recipient_ids'):
                 raise ValueError('save recipients first')
             if self.service.env.get('SMS_ENABLED', 'false').lower() == 'true':
-                if (not self.service.env.get('PURESMS_API_KEY') or not self.service.env.get('PURESMS_SENDER')
+                if (not sms_configured(self.service.env)
                         or any(not self.service.recipients.get(rid, {}).get('phone') for rid in c['recipient_ids'])):
                     raise ValueError('SMS configuration missing')
             c['detection'] = dict(phase='ARMED', started_at=start, mode=mode, rules=dict(RULES),
                                   processor=self.processor,
                                   points=[], activity_confirmed=False, last_at=None,
                                   gaps=0, observed_end_at=None)
+            self.service.alert_settings(state).update(enabled=True, recipient_ids=list(c['recipient_ids']))
             c['revision'] += 1
         self.service.store.transact(change)
 
@@ -85,6 +96,7 @@ class CycleDetector:
             old = state['cycles'][cycle_id]
             if old.get('detection', {}).get('phase') not in ('FINISHED', 'CANCELLED'):
                 raise Conflict('현재 코스가 아직 끝나지 않았습니다.')
+            self.service.alert_settings(state).update(enabled=False, points=[])
             state['current'] = new_id
             state['cycles'][new_id] = dict(recipient_ids=[], status='pending', revision=0)
         self.service.store.transact(change)
@@ -95,10 +107,16 @@ class CycleDetector:
             if cycle_id != state['current']:
                 raise Conflict('현재 코스가 변경되었습니다.')
             c = state['cycles'][cycle_id]
-            if c['status'] != 'pending' or not c.get('detection') or c['detection']['phase'] == 'FINISHED':
-                raise Conflict('이미 완료됐거나 발송 처리 중인 코스입니다.')
-            c['status'] = 'cancelled'
-            c['detection'].update(phase='CANCELLED', cancelled_at=at)
+            self.service.alert_settings(state).update(enabled=False, points=[], changed_at=at)
+            for old_id in state.get('_open_cycle_ids', state['cycles']):
+                old = state['cycles'][old_id]
+                if old['status'] in ('pending', 'claimed'):
+                    old['notifications_cancelled'] = True
+            # Never erase a completed result or an in-flight dispatch claim.
+            if c['status'] == 'pending':
+                c['status'] = 'cancelled'
+                if c.get('detection') and c['detection']['phase'] != 'FINISHED':
+                    c['detection'].update(phase='CANCELLED', cancelled_at=at)
             c['revision'] += 1
         self.service.store.transact(change)
 
@@ -121,6 +139,7 @@ class CycleDetector:
         # Replay real event times; dispatch separately rejects completions over 5 min old.
         if age < -5 or (self.processor == 'web' and age > RULES['max_age_seconds']):
             return 'stale'
+        next_id = uuid4().hex
         def change(state):
             cid = state['current']
             if cid is None:
@@ -131,8 +150,41 @@ class CycleDetector:
                 return None
             if d.get('processor', 'web') != self.processor:
                 return None
-            if d['phase'] in ('FINISHED', 'CANCELLED'):
+            alerts = self.service.alert_settings(state)
+            if not alerts['enabled']:
                 return None
+            if d['phase'] in ('FINISHED', 'CANCELLED'):
+                # Recover unclaimed completions first; a crashed claim is never retried.
+                # Start another cycle only from
+                # sustained, recent activity, never from quiet or replayed batches.
+                if d['phase'] != 'FINISHED' or c['status'] == 'pending':
+                    return None
+                if age > RULES['max_age_seconds'] or at <= parse(d['detected_end_at']):
+                    return None
+                t = at.timestamp()
+                last = alerts.get('last_at')
+                if last is not None and t <= last:
+                    return None
+                points = alerts.get('points', [])
+                if last is not None and t - last > RULES['max_gap_seconds']:
+                    points = []
+                points = [p for p in points if p[0] >= t - 60] + [[t, rms]]
+                alerts.update(points=points, last_at=t)
+                active = [p for p in points if p[1] >= RULES['active_rms']]
+                if len(points) < 10 or points[-1][0] - points[0][0] < 50 or len(active) < 6:
+                    return None
+                start = stamp(datetime.fromtimestamp(active[0][0], timezone.utc))
+                d = dict(phase='RUNNING', started_at=start, activity_started_at=start,
+                         activity_at=stamp(at), mode='unspecified', rules=dict(RULES),
+                         processor=self.processor, points=points[:-1], activity_confirmed=True,
+                         last_at=None, gaps=0, observed_end_at=None)
+                c = dict(recipient_ids=list(alerts['recipient_ids']), status='pending',
+                         revision=0, detection=d)
+                cid = next_id
+                state['cycles'][cid] = c
+                state['current'] = cid
+                alerts.update(points=[], last_at=None)
+
             rules = d['rules']
             last = parse(d['last_at']) if d['last_at'] else None
             if last and at <= last:
@@ -150,6 +202,8 @@ class CycleDetector:
                     and sum(p[1] >= rules['active_rms'] for p in recent) >= 6):
                 if not d['activity_confirmed']:
                     d['activity_at'] = stamp(at)
+                    first = next(p[0] for p in recent if p[1] >= rules['active_rms'])
+                    d['activity_started_at'] = stamp(datetime.fromtimestamp(first, timezone.utc))
                 d['activity_confirmed'] = True
             ratio = sum(p[1] < rules['quiet_rms'] for p in points) / len(points)
             span = points[-1][0] - points[0][0]
@@ -158,7 +212,7 @@ class CycleDetector:
             d['phase'] = 'RUNNING' if d['activity_confirmed'] else 'ARMED'
             if d['activity_confirmed'] and ratio >= .8:
                 d['phase'] = 'QUIET_CANDIDATE'
-            if (d['activity_confirmed'] and (at - parse(d['started_at'])).total_seconds() >= rules['min_cycle_seconds']
+            if (d['activity_confirmed'] and (at - parse(d.get('activity_started_at', d['started_at']))).total_seconds() >= rules['min_cycle_seconds']
                     and span >= rules['quiet_seconds'] - 6 and len(points) >= 33
                     and ratio >= rules['quiet_fraction']):
                 d.update(phase='FINISHED', detected_end_at=stamp(at), decision=dict(
@@ -200,14 +254,15 @@ class CycleDetector:
 
     def recover_finished(self):
         def read(state):
-            return [cid for cid, c in state['cycles'].items()
+            return [cid for cid in state.get('_open_cycle_ids', state['cycles'])
+                    for c in [state['cycles'][cid]]
                     if c.get('detection', {}).get('phase') == 'FINISHED' and c['status'] == 'pending'
                     and c['detection'].get('processor', 'web') == self.processor]
         for cid in self.service.store.transact(read):
             self.dispatch(cid)
 
     def submit(self, record):
-        # Event Hubs callback never waits for Blob storage or SMS network calls.
+        # Event Hubs callback never waits for state storage or SMS network calls.
         with self.lock:
             if self.thread is None or not self.thread.is_alive():
                 self.stopping.clear()
@@ -244,9 +299,11 @@ class CycleDetector:
         def read(state):
             c = state['cycles'].get(state['current'], {})
             d = c.get('detection', {})
+            enabled = self.service.alert_settings(state)['enabled']
             last = d.get('last_at')
             fresh = last and (self.clock() - parse(last)).total_seconds() < RULES['max_age_seconds']
-            return dict(phase=d.get('phase', 'NOT_STARTED'), fresh=bool(fresh),
+            return dict(phase=(d.get('phase', 'NOT_STARTED') if enabled else 'OFF'),
+                        alerts_enabled=enabled, auto_repeat=enabled, fresh=bool(fresh),
                         sms_status=c.get('status', 'pending'),
                         **{k: d.get(k) for k in ['mode', 'started_at', 'activity_at', 'observed_end_at',
                             'detected_end_at', 'rms', 'quiet_fraction', 'window_seconds', 'gaps',
@@ -254,7 +311,7 @@ class CycleDetector:
         result = self.service.store.transact(read)
         result['error'] = self.last_error
         result['sms_ready'] = (self.service.env.get('SMS_ENABLED', 'false').lower() == 'true'
-            and bool(self.service.env.get('PURESMS_API_KEY')) and bool(self.service.env.get('PURESMS_SENDER')))
+            and sms_configured(self.service.env))
         return result
 
 

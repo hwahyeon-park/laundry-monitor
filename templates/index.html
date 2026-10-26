@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세(탁기) Key</title>
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/highland-cow.jpg') }}">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -77,22 +78,12 @@
             margin-bottom: 8px;
         }
 
-        #notificationPanel { margin: 24px 0; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
-        #notificationPanel h2 { margin-top: 0; }
-        #notificationPanel button, #notificationPassword { padding: 10px 14px; font: inherit; }
-        #notificationPanel button { cursor: pointer; }
-        #notificationPanel button:disabled { cursor: default; }
-        #notificationNames { border: 0; padding: 0; margin: 16px 0; }
-        #notificationNames legend { margin-bottom: 12px; }
-        .notification-option { display: flex; align-items: center; gap: 10px; padding: 8px 0; width: fit-content; cursor: pointer; }
-        .notification-option input { width: 18px; height: 18px; accent-color: #145e44; }
-        .notification-option:focus-within { outline: 2px solid #145e44; outline-offset: 2px; }
-        #notificationMessage { min-height: 1.4em; }
-        #notificationPanel [hidden] { display: none !important; }
         canvas {
             max-height: 500px;
         }
     </style>
+    <link rel="stylesheet" href="/static/notifications.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 
 <body>
@@ -102,92 +93,102 @@
     <img class="title-photo" src="/static/images/highland-cow.jpg" alt="" width="76" height="76">
 </header>
 
-<div class="status-bar">
-    <span id="status" class="status inactive">
-        NO DATA
-    </span>
-
-    <span>
-        Last updated:
-        <strong id="lastUpdated">--</strong>
-    </span>
-</div>
-
-
-<details>
-    <summary>기기 연결 상태</summary>
-    <p>
-        기기 연결 상태:
-        <strong id="connectionStatus">Connecting…</strong><br>
-        메시지 전송 상태:
-        <strong id="consumerStatus">Starting…</strong>
-    </p>
-</details>
-<p id="replayNotice" aria-live="polite"></p>
-
-<div class="info">
-
-    <div class="card">
-        <strong>온도</strong>
-        <div id="temperature">--</div>
+<section class="dashboard-panel device-panel" aria-labelledby="deviceTitle">
+    <div class="panel-heading">
+        <h2 id="deviceTitle">기기 상태</h2>
+        <span id="status" class="status inactive">데이터 대기 중</span>
     </div>
-
-    <div class="card">
-        <strong>대기압</strong>
-        <div id="pressure">--</div>
+    <p class="device-updated">마지막 수신 <strong id="lastUpdated">--</strong></p>
+    <div class="info">
+        <div class="card">
+            <strong>온도</strong>
+            <div id="temperature">--</div>
+        </div>
+        <div class="card">
+            <strong>대기압</strong>
+            <div id="pressure">--</div>
+        </div>
     </div>
-
-</div>
+    <details class="device-details">
+        <summary>연결 상세 정보</summary>
+        <p>실시간 연결: <strong id="connectionStatus">연결 중…</strong><br>
+        데이터 수신: <strong id="consumerStatus">준비 중…</strong></p>
+    </details>
+    <p id="replayNotice" aria-live="polite"></p>
+</section>
 
 <section id="notificationPanel" aria-labelledby="notificationTitle">
-    <h2 id="notificationTitle">세탁 알림</h2>
-    <p id="notificationCurrent" aria-live="polite">알림 설정을 불러오는 중…</p>
-    <p id="cycleStatus" style="white-space:pre-line" aria-live="polite">코스 상태 확인 중…</p>
+    <div class="notification-header">
+        <h2 id="notificationTitle">세탁 알림</h2>
+        <p id="cycleStatus" aria-live="polite">상태 확인 중</p>
+    </div>
+    <p class="notification-intro">수신자를 한 번 저장하면 다음 빨래도 자동으로 알려드려요. 필요 없을 때는 알림을 꺼두세요.</p>
+    <p id="cycleWarning" role="status" hidden></p>
     <form id="notificationLogin">
-        <label for="notificationPassword">공통 비밀번호 (숫자 4자리)</label>
-        <input id="notificationPassword" type="password" autocomplete="current-password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required>
-        <button type="submit">잠금 해제</button>
+        <label for="notificationPassword">비밀번호 4자리</label>
+        <div class="notification-login-row">
+            <input id="notificationPassword" type="password" autocomplete="current-password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required>
+            <button class="notification-primary" type="submit">알림 설정</button>
+        </div>
     </form>
     <form id="notificationPicker" hidden>
         <fieldset id="notificationNames"></fieldset>
-        <p id="notificationHint">수신자만 저장합니다. 지금 SMS를 보내지 않습니다.</p>
-        <span id="notificationCountdown" role="timer" style="display:inline-block; margin-right:12px" hidden></span>
-        <button id="notificationSave" type="submit">전송</button>
-        <div style="margin-top:16px">
-            <label for="cycleMode">이번 코스</label>
-            <select id="cycleMode"><option value="wash">세탁</option><option value="dry">건조</option><option value="wash_dry">세탁+건조</option></select>
-            <button id="cycleStart" type="button">이번 코스 시작 기록</button>
-            <button id="cycleObservedEnd" type="button">실제 종료 시각 기록</button>
-            <button id="cycleCancel" type="button">코스 수동 종료 (SMS 안 보냄)</button>
-            <button id="cyclePrepare" type="button">다음 코스 준비</button>
-            <button id="cycleDownload" type="button">실험 기록 다운로드</button>
-            <p>수신자를 먼저 저장한 후 기계를 시작할 때 시작 기록을 누르세요. 실제 종료 기록은 관찰용이며 SMS를 강제로 보내지 않습니다.</p>
+        <p id="notificationHint"></p>
+        <div class="notification-actions">
+            <button id="notificationSave" class="notification-primary" type="submit">알림 켜기</button>
+            <button id="cycleCancel" type="button">알림 끄기</button>
         </div>
-        <button id="notificationLogout" type="button">잠그기</button>
+        <div class="notification-session">
+            <span id="notificationCountdown" role="timer" hidden></span>
+            <button id="notificationLogout" class="notification-link" type="button">잠그기</button>
+        </div>
     </form>
     <p id="notificationMessage" role="status" aria-live="polite"></p>
-    <button id="notificationRefresh" type="button">알림 상태 새로고침</button>
+    <details class="notification-details">
+        <summary>상세 정보</summary>
+        <p id="cycleDetails"></p>
+        <p id="notificationCurrent" aria-live="polite"></p>
+        <div class="notification-detail-actions">
+            <button id="notificationRefresh" class="notification-link" type="button">상태 새로고침</button>
+            <button id="cycleDownload" class="notification-link" type="button" hidden>기록 다운로드</button>
+        </div>
+    </details>
 </section>
 
-<h2>3축 가속도 &amp; 진동 세기 그래프!</h2>
-<p>
-    5초 묶음별 값입니다.
-    X·Y·Z 축 평균은 왼쪽 눈금, 진동 세기는 오른쪽 눈금을 사용합니다.
-</p>
+<section class="dashboard-panel graph-panel" aria-labelledby="graphTitle">
+    <h2 id="graphTitle">움직임과 진동</h2>
+    <p class="graph-intro">세탁기의 움직임과 진동을 5초 단위로 보여드려요.</p>
+    <div class="history-controls">
+        <label for="historyRange">확인할 시간</label>
+        <select id="historyRange">
+            <option value="5">최근 5분</option>
+            <option value="30" selected>최근 30분</option>
+            <option value="60">최근 1시간</option>
+        </select>
+        <button id="reloadHistory" type="button">기록 불러오기</button>
+    </div>
+    <p id="historyNotice" aria-live="polite"></p>
+    <div class="chart-surface"><canvas id="accelerationChart" role="img" aria-label="시간에 따른 세 방향의 평균 가속도와 진동 세기"></canvas></div>
+    <details class="graph-guide">
+        <summary>그래프 읽는 법</summary>
+        <p>점 하나는 5초 동안 측정한 값을 요약한 거예요. X·Y·Z는 세 방향의 평균 가속도로 왼쪽 눈금을, 진동 세기는 오른쪽 눈금을 보면 돼요.</p>
+    </details>
+</section>
 
-<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
-    <label for="historyRange">표시 범위</label>
-    <select id="historyRange">
-        <option value="5">최근 5분</option>
-        <option value="30" selected>최근 30분</option>
-        <option value="60">최근 1시간</option>
-    </select>
-    <button id="reloadHistory" type="button">저장 기록 다시 불러오기</button>
-</div>
-<p id="historyNotice" aria-live="polite"></p>
-<canvas id="accelerationChart"></canvas>
-
-<script id="laundryTranslations" type="application/json">{}</script>
+<script id="laundryTranslations" type="application/json">{
+  "NO DATA": "\ub370\uc774\ud130 \ub300\uae30 \uc911",
+  "RECEIVING DATA": "\ub370\uc774\ud130 \uc218\uc2e0 \uc911",
+  "STALE": "\ucd5c\uadfc \ub370\uc774\ud130 \uc5c6\uc74c",
+  "Connecting\u2026": "\uc5f0\uacb0 \uc911\u2026",
+  "Connected": "\uc5f0\uacb0\ub428",
+  "Reconnecting\u2026": "\ub2e4\uc2dc \uc5f0\uacb0 \uc911\u2026",
+  "Starting\u2026": "\uc900\ube44 \uc911\u2026",
+  "Azure settings required": "\uc11c\ubc84 \uc124\uc815 \ud544\uc694",
+  "Disabled": "\uc218\uc2e0 \uaebc\uc9d0",
+  "Stopped": "\uc218\uc2e0 \uc911\uc9c0",
+  "Unknown": "\ud655\uc778 \ud544\uc694",
+  "\ub370\uc774\ud130 \uc548\ub4e4\uc5b4\uc640\uc720": "\ucd5c\uadfc \ub370\uc774\ud130 \uc5c6\uc74c"
+}</script>
 <script src="/static/i18n.js"></script>
 <script src="/static/cycle.js"></script>
 <script src="/static/notifications.js"></script>

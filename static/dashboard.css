@@ -1,0 +1,37 @@
+/* Device and chart sections share spacing with the notification card. */
+.dashboard-panel { margin: 28px 0; padding: 24px; border: 1px solid; border-radius: 16px; word-break: keep-all; overflow-wrap: anywhere; }
+.dashboard-panel h2 { margin: 0; font-size: 1.3rem; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.device-panel { background: #ffffff; border-color: #000000; color: #222222; }
+.device-panel .status { padding: 6px 12px; font-size: .85rem; font-weight: 600; }
+.device-panel .active { background: #333333; color: #ffffff; }
+.device-panel .inactive { background: #eeeeee; color: #606060; }
+.device-updated { color: #606060; font-size: .85rem; margin: 14px 0 20px; }
+.device-updated strong { font-weight: 500; }
+.device-panel .info { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 0; }
+.device-panel .card { min-width: 0; padding: 16px 18px; border: 1px solid #dddddd; background: #fff; border-radius: 10px; }
+.device-panel .card strong { font-size: .85rem; font-weight: 500; color: #606060; margin-bottom: 10px; }
+.device-panel .card div { font-size: clamp(1.1rem,3.5vw,1.5rem); font-weight: 600; }
+.device-details { margin-top: 18px; padding-top: 12px; border-top: 1px solid #dddddd; font-size: .85rem; color: #606060; line-height: 1.8; }
+.dashboard-panel summary { cursor: pointer; padding: 5px 0; }
+#replayNotice { font-size: .85rem; line-height: 1.6; }
+#replayNotice:empty { display: none; }
+.graph-panel { background: #ffffff; border-color: #000000; color: #222222; }
+.graph-intro { color: #606060; line-height: 1.6; margin: 10px 0 18px; }
+.history-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.history-controls label { font-size: .9rem; margin-right: 2px; }
+.history-controls select, .history-controls button { font: inherit; padding: 10px 12px; border: 1px solid #bdbdbd; border-radius: 9px; background: white; color: #333333; min-height: 44px; }
+.history-controls button { cursor: pointer; background: #f2f2f2; }
+.history-controls button:disabled { opacity: .5; cursor: default; }
+.dashboard-panel :is(button,select,summary):focus-visible { outline: 3px solid #777777; outline-offset: 3px; }
+#historyNotice { font-size: .85rem; color: #606060; line-height: 1.6; margin: 14px 0; }
+.chart-surface { position: relative; height: 340px; padding: 12px; border: 1px solid #dddddd; border-radius: 12px; background: white; box-sizing: border-box; }
+.graph-guide { font-size: .85rem; color: #606060; line-height: 1.7; margin-top: 12px; }
+.graph-guide p { margin: 8px 0 0; }
+@media(max-width:480px) {
+    .dashboard-panel { padding: 18px; }
+    .device-panel .card { padding: 14px 12px; }
+    .history-controls label { flex-basis: 100%; }
+    .history-controls select { flex: 1; min-width: 0; }
+    .chart-surface { height: 300px; padding: 8px; }
+}

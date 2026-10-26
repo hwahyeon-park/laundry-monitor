@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 root = Path(__file__).resolve().parents[1]
-names = ['app.py', 'realtime.py', 'history.py', 'notifications.py', 'local_settings.py', 'cycle_detector.py', 'requirements.txt', 'gunicorn.conf.py']
+names = ['app.py', 'realtime.py', 'history.py', 'notifications.py', 'table_state.py', 'local_settings.py', 'cycle_detector.py', 'requirements.txt', 'gunicorn.conf.py']
 files = [root/name for name in names]
 for folder in ('static', 'templates'):
     files.extend(p for p in (root/folder).rglob('*') if p.is_file())

@@ -116,7 +116,7 @@ window.LaundryNotifications?.mount();
                     pointRadius: 2, tension: 0, spanGaps: 15000
                 })) },
                 options: {
-                    responsive: true, animation: false,
+                    responsive: true, maintainAspectRatio: false, animation: false,
                     interaction: { mode: 'index', intersect: false },
                     scales: {
                         x: {
@@ -131,7 +131,7 @@ window.LaundryNotifications?.mount();
                         vibration: { type: 'linear', position: 'right', beginAtZero: true,
                             grid: { drawOnChartArea: false }, title: { display: true, text: t('진동 세기 (g)') } }
                     },
-                    plugins: { tooltip: { callbacks: {
+                    plugins: { legend: { labels: { boxWidth: 12, boxHeight: 12 } }, tooltip: { callbacks: {
                         title: items => items.length ? new Date(items[0].parsed.x).toLocaleString('en-GB') : '',
                         label: item => item.dataset.label + ': ' + item.parsed.y.toFixed(4) + ' g'
                     } } }
@@ -153,7 +153,7 @@ window.LaundryNotifications?.mount();
         historyController = controller;
         const selectedMinutes = minutes;
         const timeout = setTimeout(() => controller.abort(), 30000);
-        element('historyNotice').textContent = t('저장 기록을 불러오는 중…');
+        element('historyNotice').textContent = t('기록을 불러오고 있어요…');
         element('reloadHistory').disabled = true;
         try {
             const response = await fetch(`/api/history?minutes=${selectedMinutes}`, {
@@ -168,17 +168,17 @@ window.LaundryNotifications?.mount();
             render();
             if (!response.ok) {
                 element('historyNotice').textContent = response.status === 422
-                    ? t('조회량이 많습니다. 더 짧은 표시 범위를 선택해 주세요.')
-                    : t('저장 기록을 불러오지 못했습니다. 실시간 수신은 계속됩니다. 다시 불러오기를 눌러 주세요.');
+                    ? t('기록이 많아요. 확인할 시간을 조금 줄여 주세요.')
+                    : t('기록을 불러오지 못했어요. ‘기록 불러오기’을 눌러 다시 시도해 주세요.');
             } else {
                 element('historyNotice').textContent = data.tablePointCount
-                    ? t`최근 ${selectedMinutes}분 저장 기록을 불러왔습니다.`
-                    : t('이 기간에 저장된 기록이 아직 없습니다. 도착하는 데이터는 실시간으로 표시합니다.');
+                    ? t`최근 ${selectedMinutes}분의 기록이에요.`
+                    : t('아직 이 시간대의 기록이 없어요. 새 데이터가 들어오면 그래프에 표시돼요.');
                 if (data.skippedRows) element('historyNotice').textContent += t` 읽을 수 없는 기록 ${data.skippedRows}개는 제외했습니다.`;
             }
         } catch (error) {
             if (requestId !== historyRequest || paused) return;
-            element('historyNotice').textContent = t('저장 기록 조회에 실패했습니다. 실시간 수신은 계속됩니다. 다시 불러오기를 눌러 주세요.');
+            element('historyNotice').textContent = t('기록을 불러오지 못했어요. ‘기록 불러오기’을 눌러 다시 시도해 주세요.');
         } finally {
             clearTimeout(timeout);
             if (requestId === historyRequest) element('reloadHistory').disabled = false;
@@ -193,12 +193,12 @@ window.LaundryNotifications?.mount();
         status = undefined;
         source = new EventSource('/api/stream');
         signalAt = performance.now();
-        element('connectionStatus').textContent = 'Connecting…';
+        element('connectionStatus').textContent = t('Connecting…');
         updateStatus();
         source.onopen = () => {
             signalAt = performance.now();
             transportReady = true;
-            element('connectionStatus').textContent = 'Connected';
+            element('connectionStatus').textContent = t('Connected');
             if (hadConnection) loadHistory();
             hadConnection = true;
             updateStatus();
@@ -220,7 +220,7 @@ window.LaundryNotifications?.mount();
                 status = JSON.parse(event.data);
                 statusAt = performance.now();
                 syncClock(status.serverTime);
-                element('consumerStatus').textContent = consumerLabels[status.consumerStatus] || 'Unknown';
+                element('consumerStatus').textContent = t(consumerLabels[status.consumerStatus] || 'Unknown');
                 updateStatus();
             } catch (error) {
                 element('replayNotice').textContent = t('수신 상태를 확인하지 못했습니다.');
@@ -234,7 +234,7 @@ window.LaundryNotifications?.mount();
         source.onerror = () => {
             transportReady = false;
             status = undefined;
-            element('connectionStatus').textContent = 'Reconnecting…';
+            element('connectionStatus').textContent = t('Reconnecting…');
             updateStatus();
             if (source.readyState === EventSource.CLOSED) {
                 retryTimer = setTimeout(connect, 10000 + Math.random() * 3000);
